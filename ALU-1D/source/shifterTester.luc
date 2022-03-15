@@ -1,0 +1,168 @@
+module shifterTester (
+    input clk,  // clock
+    input rst,  // reset
+    input start,  // can remove
+    input lsb,
+    output status[2] // 0-during, 1-pass, 2-fail
+  ) {
+  // slow calculation of alu for observation
+  counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));
+  // 9 test cases - need 4
+  dff counter[4](.clk(slowclock.value), .rst(rst));
+  // fsm with 4 states idle, testing, pass, fail.
+  fsm state (.clk(slowclock.value), .rst(rst)) = {IDLE, TEST, PASS, FAIL};
+  // instantiate alu
+  alu alu(.clk(slowclock.value));
+  
+  always {
+    alu.a = 0;
+    alu.b = 0;
+    alu.alufn = b000000;
+    alu.lsb = lsb;
+    status = 0;
+    
+    // if start signal not given, stay idle - remove
+    if (start==0) {
+      state.d = state.IDLE;
+      status = 0;
+      
+    }
+    else {
+      // start==1
+      case(state.q){
+        // if currentstate is idle, change start to test
+        state.IDLE:
+          state.d = state.TEST;
+        // change to test, begin
+        state.TEST:
+          // use the dff to go through test case
+          case(counter.q) {
+            // 1-3 SHL
+            // test case 1: SHL FFFF by 0 bits
+            4b0001: // store in this address
+              alu.alufn = b100000;
+              alu.a = 16hFFFF;
+              alu.b = 4b0000;
+              
+              if (alu.out != 16hFFFF) {
+                state.d = state.FAIL;
+              }
+            //testcase 2: SHL FFFF left by 4
+            4b0010:
+              alu.alufn = b100000;
+              alu.a = 16hFFFF;
+              alu.b = 4b0100;
+              
+              if(alu.out != 16hFFF0){
+                state.d = state.FAIL;
+              }
+              
+            
+            //testcase 3: SHL FF0F left by 15
+            4b0011:
+              alu.alufn = b100000;
+              alu.a = 16hF00F;
+              alu.b = 4b1111;
+              
+              if(alu.out != 16h8000){
+                state.d = state.FAIL;
+              }
+            // 4-6 SHR right
+            // test case 4: SHR FFFF right by 0
+            4b0100:
+              alu.alufn = b100001;
+              alu.a = 16hFFFF;
+              alu.b = 4b0000;
+              
+              if(alu.out != 16hFFFF){
+                state.d = state.FAIL;
+              }
+            //testcase 5: SHR FFFF right by 8
+            4b0101:
+              alu.alufn = b100001;
+              alu.a = 16hFFFF;
+              alu.b = 4b1000;
+              
+              if(alu.out != 16h00FF){
+                state.d = state.FAIL;
+              }
+             
+            //testcase 6: SHR F00F right by 15
+            4b0110:
+              alu.alufn = b100001;
+              alu.a = 16hFF0F;
+              alu.b = 4b1111;
+              
+              if(alu.out != 16h0001){
+                state.d = state.FAIL;
+              }
+            // 7-10 test shift right arithmetic
+            // test case 7: SRA FFFF by 0
+            4b0111:
+              alu.alufn = b100010;
+              alu.a = 16hFFFF;
+              alu.b = 4b0000;
+              
+              if(alu.out != 16hFFFF){
+                state.d = state.FAIL;
+              }
+            //testcase 8: SRA FFFF by 4
+            4b1000:
+              alu.alufn = b100010;
+              alu.a = 16hFFFF;
+              alu.b = 4b0100;
+              
+              if(alu.out != 16hFFFF){
+                state.d = state.FAIL;
+              }
+            //testcase 9: SRA F00F by 8
+            4b1001:
+              alu.alufn = b100010;
+              alu.a = 16hF00F;
+              alu.b = 4b1000;
+              
+              if(alu.out != 16hFFF0){
+                state.d = state.FAIL;
+              }
+            //testcase 10: SRA F00F by 15
+            4b1010:
+              alu.alufn = b100010;
+              alu.a = 16hF00F;
+              alu.b = 4b1111;
+              
+              if(alu.out != 16hFFFF){
+                state.d = state.FAIL;
+              }
+            //testcase 11: SRA 2468 by 4
+            4b1011:
+              alu.alufn = b100010;
+              alu.a = 16h2468;
+              alu.b = 4b0100;
+              
+              if(alu.out != 16h0246){
+                state.d = state.FAIL;
+              }
+             
+                     
+            
+            //if test cases no fail, return pass
+            4b1100:
+              state.d = state.PASS;
+            
+            
+          }
+        //if state is a pass, change status to 1
+        state.PASS:
+          status = 1;
+        //if state is a fail, change status to 2
+        state.FAIL:
+          status = 2;
+        
+      }
+      counter.d = counter.q+1;  //Counter to go next test case
+      
+      
+    }
+      
+  }
+}

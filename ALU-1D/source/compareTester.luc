@@ -1,0 +1,159 @@
+module compareTester (
+    input clk,  // clock
+    input rst,  // reset
+    input start,
+    input lsb,
+    output status[2] //0 = not done, 1=pass, 2 = fail 
+  ) {
+  // slow calculation of alu for observation 
+  
+  counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));    
+  
+  // dff: Stores data, subsignals clk, rst, d, q
+  dff testCaseNum[5](#INIT(0),.clk(slowclock.value),.rst(rst)); // 24 cases - 5 bits 11000
+  // fsm: Simmilar to dff but with built-in constants of various states
+  fsm state (.clk(slowclock.value),.rst(rst)) = {IDLE,TEST,PASS,FAIL}; 
+  // alu
+  alu alu(.clk(slowclock.value));
+  
+  always {
+    //prerequiste: we need initalize 
+    alu.alufn = b000000; 
+    alu.lsb = lsb;
+    alu.a = b0;
+    alu.b = b0;
+    status = 0;
+    
+    //Make unit idle when not auto testing
+    if(start==0) { 
+      state.d =state.IDLE;
+    }
+    case(state.q){ 
+      state.IDLE:
+        status = 0; // 0 = not done, 1=pass, 2 = fail 
+        if(start==1){ //start test at next cycle
+          state.d = state.TEST;
+          testCaseNum.d = 0; 
+         }
+      state.TEST:
+        case(testCaseNum.q){
+          /*
+            Case structure:
+            1. Initialize a & b
+            2. select corresponding alufn operation
+              01: ==
+              10: <
+              11: <=
+            3. pass aluder outputs z, n, v into comparator
+            4. verify if correct output 
+            5. if wrong output, then fail
+          */ 
+          
+          // TEST CASE SUITE 1: TESTING EQUALITY
+          // A=B
+          
+      b00000: // test 0 == 0
+            alu.a = 16h0000; 
+            alu.b = 16h0000;
+            alu.alufn = 6b110011;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+            } 
+            
+            
+      b00011: //test 0x5 == 0xB
+            alu.a = 16h0005;
+            alu.b = 16h000B;
+            alu.alufn = 6b110011;
+            if(alu.out[0]!=0){
+              state.d = state.FAIL;
+            }
+           
+      b00100: //test 0xFFFF == 2
+            alu.a = 16hFFFF;
+            alu.b = 16h0002;
+            alu.alufn = 6b110011;
+            if(alu.out[0]!=0){
+              state.d = state.FAIL;
+            }
+           
+ 
+         // TEST CASE SUITE 2: TESTING LESSER THAN
+         // test A<B 
+            
+      b01000: // test 0 < 0
+            alu.a = 16h0000; 
+            alu.b = 16h0000;
+            alu.alufn = 6b110101;
+            if(alu.out[0]!=0){
+              state.d = state.FAIL;
+            } 
+            
+   
+            
+     b01011: //test 0x5 < 0xB 
+            alu.a = 16h0005;
+            alu.b = 16h000B;
+            alu.alufn = 6b110101;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+            }
+            
+   
+            
+     b01101: //test 0x7000 < 0x6FFF
+            alu.a = 16h7000;
+            alu.b = 16h6FFF;
+            alu.alufn = 6b110101;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+            }
+            
+            
+         // TEST CASE SUITE 3: TESTING LESSER THAN AND EQUALS
+         // test A<=B 
+            
+      b10000: // test 0 <= 0
+            alu.a = 16h0000; 
+            alu.b = 16h0000;
+            alu.alufn = 6b110111;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+            } 
+            
+            
+     b10011: //test 0x5 <=0xB pos<pos no overflow
+            alu.a = 16h0005;
+            alu.b = 16h000B;
+            alu.alufn = 6b110111;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+            }
+            
+           
+     b10110: //test 0xFFFD <= 0xFFFF  neg<neg no overflow
+            alu.a = 16hFFFD;
+            alu.b = 16hFFFF;
+            alu.alufn = 6b110111;
+            if(alu.out[0]!=1){
+              state.d = state.FAIL;
+          }
+            
+
+            
+            
+           //****************************************  
+           //if all test cases passed
+            b11000:
+            state.d = state.PASS;
+        }
+        
+      state.PASS:
+        status = 1;
+      state.FAIL:
+        status = 2;
+     } 
+    testCaseNum.d = testCaseNum.q+1; // incremenet for next case 
+  }
+}
+

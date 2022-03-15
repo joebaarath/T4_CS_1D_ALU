@@ -1,0 +1,145 @@
+module tester (
+    input clk,  // clock
+    input rst,  // reset
+    input button[3], // 0: left, 1 :right, 2: center
+    input lsb,
+    output test_state[3], // current test
+    
+    // 0: IDLE
+    // 1: ADDER
+    // 2: COMPARE
+    // 3: BOOL
+    // 4: SHIFT
+    // 5: MULTIPLY
+    // 6: MODULO  
+    output current_state[2]   //remember current state which is either 0:testing, 1:pass, 2:Fail
+    
+    // 0: testing
+    // 1: pass
+    // 2: fail
+
+  ) {
+  
+  .clk(clk),.rst(rst){
+  boolTest test_bool;        //initialise testers
+  compareTester test_com;  
+  shifterTester test_shift;
+  adderTester test_add;
+  multiplierTester test_m;
+  modulo_tester test_mod;
+  dff result[2];            //remember current state which is either 0:testing, 1:pass, 2:fail 
+  fsm testState = {IDLE, ADDER  , COMPARE ,BOOL, SHIFT,MULTIPLY, MODULO};
+    
+}
+
+  always {
+    test_bool.start = 0; //setting start=0 to set state as IDLE 
+    test_bool.lsb = lsb; //passing down the lsb signal for error checking
+    test_com.start = 0 ;
+    test_com.lsb = lsb;
+    test_shift.start =0;
+    test_shift.lsb = lsb;
+    test_add.start = 0;
+    test_add.lsb = lsb;
+    test_m.start = 0;
+    test_m.lsb = lsb; 
+    test_mod.start =0;
+    test_mod.lsb = lsb;
+    result.d = 0;
+    current_state = result.q; // transfer saved status from dff to current_state
+    test_state = testState.q; // transfer fms state to test_state
+    
+    case(testState.q){
+    
+      testState.IDLE:
+        result.d = 0;
+        
+        
+        if (button[0]){                  //left button to go previous test
+          testState.d = testState.MODULO;
+        }
+        else if (button[1]){
+          testState.d = testState.q +1;  //right button to go next test
+        }
+      
+      
+        
+      
+  
+      testState.ADDER:
+      test_add.start = 1;                 // set start to 1 to start test
+      result.d = test_add.status;         // set outcome of test to dff input 
+      
+        if(button[0]){
+          testState.d = testState.q -1;
+          }
+        else if (button[1]){
+          testState.d = testState.COMPARE;
+          }
+      
+      testState.COMPARE:
+      test_com.start =1;
+      result.d = test_com.status;
+      
+        
+        if (button[0]){
+          testState.d = testState.q -1;
+        } 
+        else if (button[1]) {
+        testState.d = testState.BOOL;
+        }
+        
+          
+          
+      
+      testState.BOOL:
+        test_bool.start =1;
+        result.d = test_bool.status;
+        
+        if (button[0]){
+          testState.d = testState.q -1;
+        }
+        else if (button[1]){
+        testState.d = testState.SHIFT;
+        }
+      
+      testState.SHIFT:
+      test_shift.start =1;
+      result.d = test_shift.status;
+      
+      if (button[0]){
+        testState.d = testState.q -1;
+      }
+      else if(button[1]){
+      testState.d = testState.MULTIPLY;
+      }
+      
+      testState.MULTIPLY:
+      test_m.start=1;
+      result.d = test_m.status;
+      
+        if (button[0]){
+          testState.d = testState.q -1;
+        }
+        else if (button[1]){
+        testState.d = testState.MODULO;
+        }
+      
+      testState.MODULO:
+      test_mod.start = 1;
+      result.d = test_mod.status;
+      
+      if (button[0]){
+        testState.d = testState.q -1;
+      }
+      else if (button[1]){
+        testState.d = testState.IDLE;
+      }
+      }
+    if (button[2]){    // center button for 'reset'
+    testState.d = testState.IDLE; 
+  }
+ }
+}
+
+    

@@ -1,0 +1,170 @@
+module adderTester (
+    input clk,  // clock
+    input rst,  // reset
+    input start,
+    input lsb,
+    output status[2]
+  ) {
+  
+  counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));
+  
+  dff register[4](.clk(slowclock.value), .rst(rst));  // slow calculation of alu for observation 
+  
+  fsm state (.clk(slowclock.value), .rst(rst)) = {IDLE, TESTING, PASS, FAIL};
+  
+  alu alu(.clk(slowclock.value));
+  
+  always {
+    status = 0;
+    alu.lsb = lsb; 
+    alu.a = 0;
+    alu.b = 0;
+    alu.alufn = b000000; 
+    
+    if(start == 0) {
+      state.d = state.IDLE;
+    }
+    
+    case(state.q){
+      state.IDLE:
+        status = 0;
+        if(start == 1){
+          state.d = state.TESTING;
+        }
+      
+      state.TESTING:
+        case(register.q) {
+          // ADD: 0 + 0
+          4b0000:
+            alu.a = 16h0000;
+            alu.b = 16h0000;
+            alu.alufn = b000000;
+            
+            
+            if (alu.out != 16h0000 | alu.z != 1 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+          
+          // ADD: pos + pos (10 + 10)
+          4b0001:
+            alu.a = 16h000A;
+            alu.b = 16h000A;
+            alu.alufn = b000000;
+            
+            if (alu.out != 16h0014| alu.z != 0 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+            
+          // ADD: pos + neg (10 + (-10))
+          4b0010:
+            alu.a = 16h000A;
+            alu.b = 16hFFF6;
+            alu.alufn = b000000;
+            
+            if (alu.out != 16h0000| alu.z != 1 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+            
+          // ADD: neg + neg (-10 + (-12))
+          4b0011:
+            alu.a = 16hFFF6;
+            alu.b = 16hFFF4;
+            alu.alufn = b000000;
+            
+            if (alu.out != 16hFFEA| alu.z != 0 | alu.v !=0 |alu.n != 1) {
+              state.d = state.FAIL;
+            }
+          
+          // ADD: neg + neg (-32767 + (-32767))
+          4b0100:
+            alu.a = 16h8001;
+            alu.b = 16h8001;
+            alu.alufn = b000000;
+            
+            if (alu.out != 16h0002| alu.z != 0 | alu.v !=1 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+            
+            // ADD: pos + pos (32767 + (32767))
+          4b0101:
+            alu.a = 16h7FFF;
+            alu.b = 16h7FFF;
+            alu.alufn = b000000;
+            
+            if (alu.out != 16hFFFE | alu.z != 0 | alu.v !=1 |alu.n != 1) {
+              state.d = state.FAIL;
+            }
+            
+            
+          // SUB: 0 - 0
+          4b0101:
+            alu.a = 16h0000;
+            alu.b = 16h0000;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16h0000| alu.z != 1 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+            
+          // SUB: pos - neg (10 - (-10))
+          4b0110:
+            alu.a = 16h000A;
+            alu.b = 16hFFF6;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16h0014| alu.z != 0 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+            
+          // SUB: pos - pos (10 - 10)
+          4b0111:
+            alu.a = 16h000A;
+            alu.b = 16h000A;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16h0000| alu.z != 1 | alu.v !=0 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+          
+          // SUB: neg - pos (-10 - 12)
+          4b1000:
+            alu.a = 16hFFF6;
+            alu.b = 16h000C;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16hFFEA| alu.z != 0 | alu.v !=0 |alu.n != 1) {
+              state.d = state.FAIL;
+            }
+            
+          // SUB: neg - pos (-32767 - 32767)
+          4b1001:
+            alu.a = 16h8001;
+            alu.b = 16h7FFF;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16h0002| alu.z != 0 | alu.v !=1 |alu.n != 0) {
+              state.d = state.FAIL;
+            }
+          
+          // SUB: pos - neg (32767 - (-325767))
+          4b1010:
+            alu.a = 16h7FFF;
+            alu.b = 16h8001;
+            alu.alufn = b000001;
+            
+            if (alu.out != 16hFFFE| alu.z != 0 | alu.v !=1 |alu.n != 1) {
+              state.d = state.FAIL;
+            }
+            
+          4b1011:
+            state.d = state.PASS;
+        }
+      state.PASS:
+         status = 1;
+      state.FAIL:
+         status = 2;
+    } 
+    
+    register.d = register.q + 1;
+  }
+}

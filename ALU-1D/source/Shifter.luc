@@ -1,0 +1,16 @@
+module shifter (
+    input a[16],  // value to shift
+    input b[4],  // number of bits to shift value
+    input alufn[6], //ALUFN value
+    output out[16]
+  ) {
+
+  always {
+  case(alufn[1:0]){
+      default: out = a;
+      b00: out = a << b;
+      b01: out = a >> b;
+      b10: out = $signed(a) >>> b;
+      }
+  }
+}

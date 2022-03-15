@@ -1,0 +1,73 @@
+module modulo_tester (
+    input clk,  // clock
+    input rst,  // reset
+    input start,
+    input lsb, 
+    output status[2] // 0: not started, 1: pass, 2: fail
+  ) {
+  
+  counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));
+  
+  dff register[3](.clk(slowclock.value), .rst(rst));
+  
+  fsm state (.clk(slowclock.value), .rst(rst)) = {IDLE, TESTING, PASS, FAIL}; // refer to other tester module
+  
+  alu alu(.clk(slowclock.value));
+  
+  always {
+    status = 0;
+    alu.lsb = lsb;
+    alu.a = 0;
+    alu.b = 0;
+    alu.alufn = 6b000100; // alufn selector for modulo
+    
+    //IDLE if alu_tester has not started
+    if (start == 0){
+      state.d = state.IDLE;
+    }
+    case(state.q){
+      state.IDLE:
+        status = 0;
+        if(start == 1){
+          state.d = state.TESTING;
+        }
+        
+      state.TESTING:
+        case(register.q) {
+        
+          b000: // Test case: 10 mod 2
+            alu.a = 16h000A;
+            alu.b = 16h0002;
+            alu.alufn = 6b000100;
+            if (alu.out != 16h0000){
+              
+              state.d = state.FAIL;
+            }
+            
+          b001: // Test case: 10 mod 15
+            
+            alu.a = 16h000A;
+            alu.b = 16h000F;  
+            alu.alufn = 6b000100;
+            if (alu.out != 16h000A){
+              state.d = state.FAIL;
+            }
+            
+          b010:
+            state.d = state.PASS;
+        }
+      state.PASS:
+        status = 1;
+      state.FAIL:
+        status = 2;
+        
+    }
+    
+    register.d = register.q + 1;
+    
+  }
+}
+
+
+
+

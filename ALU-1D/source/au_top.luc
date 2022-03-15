@@ -1,0 +1,36 @@
+module au_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led[3][8], // LEDs on IO Shield
+    output io_seg [8],      // 7-segment LEDs on IO Shield (Active low)
+    output io_sel [4],      // Digit select on IO Shield (Active low)
+    input io_button [5],    // 5 buttons on IO Shield
+    input io_dip [3][8]   // DIP switches on IO Shield
+    ) {
+  sig rst;      // reset signal
+ 
+  .clk(clk){
+      // The reset conditioner is used to synchronize the reset signal to the FPGA
+      // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+    .rst(rst){
+    initialise init;
+    }
+  }
+  always {
+        reset_cond.in = ~rst_n;   // input raw inverted reset signal
+        rst = reset_cond.out;     // conditioned reset
+        init.usb_rx = usb_rx;
+        init.io_button = io_button;
+        init.io_dip = io_dip;
+        led = init.led;
+        usb_tx = init.usb_tx;
+        io_led = init.io_led;
+        io_seg = init.io_seg;
+        io_sel = init.io_sel;
+  }
+}
+

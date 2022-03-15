@@ -1,0 +1,114 @@
+module multiplierTester (
+    input clk,  // clock
+    input rst,  // reset
+    input start,
+    input lsb,
+    output status[2] //0 = not done, 1=pass, 2 = fail
+  ) {
+  
+  counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));
+  
+  dff testNum[4](#INIT(0),.clk(slowclock.value),.rst(rst)); // 15 cases 4 bits 1111
+  
+  fsm state (.clk(slowclock.value),.rst(rst)) = {IDLE,TEST,PASS,FAIL}; // slow calculation of alu for observation
+  
+  alu alu(.clk(slowclock.value));
+
+
+  always {
+    alu.alufn = 6b000010;
+    alu.lsb = lsb;
+    alu.a = 16h0;
+    alu.b=16h0;
+    status = 0;
+    //when not testing this unit automatically, make idle
+    if(start==0){ 
+      state.d =state.IDLE;
+    }
+    case(state.q){ 
+      state.IDLE:
+        status = 0;
+        if(start==1){ //start test at next cycle
+          state.d = state.TEST;
+          testNum.d = 0; 
+         }
+      state.TEST:
+        case(testNum.q){
+      b0000: //0*0
+            alu.a = 16h0000;
+            alu.b = 16h0000;
+            if(alu.out!=16h0000){
+              state.d = state.FAIL;
+            }        
+      b0001: //1*1 basic pos*pos
+            alu.a = 16h0001;
+            alu.b = 16h0001;
+            if(alu.out!=16h0001){
+              state.d = state.FAIL;
+            }
+      b0010: //-1*-1 basic neg*neg
+            alu.a = 16hFFFF;
+            alu.b = 16hFFFF;
+            if(alu.out!=16h0001){
+              state.d = state.FAIL;
+            }
+     b0011: //0*0x2= 0 basic 0*pos 
+            alu.a = 16h0000;
+            alu.b = 16h0002;
+            if(alu.out!=16h0000){
+              state.d = state.FAIL;
+            }
+     b0100: //1*0x3333 = 13107 dec basic 1*pos 
+            alu.a = 16h0001;
+            alu.b = 16h3333;
+            if(alu.out!=16h3333){
+              state.d = state.FAIL;
+            }
+      b0101: //-1*0x3333 = -13107 dec basic -1*pos 
+            alu.a = 16hFFFF;
+            alu.b = 16h3333;
+            if(alu.out!=16hCCCD){
+              state.d = state.FAIL;
+            }
+      b0110: //0*0xF389 = 0 basic 0*neg 
+            alu.a = 16h0000;
+            alu.b = 16hF389;
+            if(alu.out!=16h0000){
+              state.d = state.FAIL;
+            }
+      b0111: //1*0xF389 = -3191 dec basic 1*neg 
+            alu.a = 16h0001;
+            alu.b = 16hF389;
+            if(alu.out!=16hF389){
+              state.d = state.FAIL;
+            }
+      b1000: //-1*0xF389 = 3191 dec basic -1*neg 
+            alu.a = 16hFFFF;
+            alu.b = 16hF389;
+            if(alu.out!=16h0C77){
+              state.d = state.FAIL;
+            }
+      b1001: //2*5 = 10 pos*pos no overflow
+            alu.a = 16h0002;
+            alu.b = 16h0005;
+            if(alu.out!=16h000A){
+              state.d = state.FAIL;
+            }
+        
+          //****************************************  
+          //if all test cases passed up to here, pass
+      b1010:
+            state.d = state.PASS;
+          }
+        
+      state.PASS:
+        status = 1;
+      state.FAIL:
+        status = 2;
+    }
+    testNum.d = testNum.q+1; // incremenet for next case 
+  }
+}
+
+
+

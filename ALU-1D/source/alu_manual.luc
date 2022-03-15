@@ -1,0 +1,92 @@
+module alu_manual (
+    input clk,  // clock
+    input rst,  // reset
+    input button[2], //0: center, 1: down
+    input alufn[6],
+    input in[16],
+    input lsb,
+    output out[16],
+    output outDisplay[8],
+    output z,
+    output v,
+    output n
+){
+  
+  .clk(clk), .rst(rst){ 
+  
+      dff regA[16];     //registers to remember inputs
+      dff regB[16];
+      dff result[16];
+      dff display[8];
+      dff zout;
+      dff vout;
+      dff nout;
+       
+      
+  
+      fsm inputSelector = {A,B,ANS};  //fsm for input selector 
+  }
+   alu aluunit(.clk(clk));
+  always {
+    aluunit.a = regA.q;                    //register output as input A
+    aluunit.b = regB.q;                    // register output as input B
+    aluunit.lsb = lsb;
+    aluunit.alufn = alufn;
+   
+    
+    case(inputSelector.q) {
+      inputSelector.A:
+      display.d = 8b10001000; //Display "A" on seg
+      if (button[1]){                         // down button to go next state
+        regA.d = in;
+        inputSelector.d = inputSelector.B;
+      }
+      else {                                 //else stay in the same state
+        inputSelector.d = inputSelector.A;
+      }
+      
+      inputSelector.B:
+      display.d = 8b10000011; //Display "B' on seg
+      if(button[1]){
+        regB.d = in;
+        inputSelector.d = inputSelector.ANS;
+      }
+      else{
+        inputSelector.d = inputSelector.B;
+      }
+      
+      inputSelector.ANS:
+      display.d = 8b11000000; //Display "O" for ANS
+      result.d = aluunit.out;
+      zout.d = aluunit.z;                  
+      vout.d = aluunit.v;
+      nout.d = aluunit.n;
+      if(button[1]){                           // down button again to reset the values 
+        regA.d = 0;
+        regB.d = 0;
+        result.d = 0;
+        zout.d = 0;
+        vout.d = 0;
+        nout.d = 0;
+        inputSelector.d = inputSelector.A;
+      }
+      else {                                    //else stay in output state
+        inputSelector.d = inputSelector.ANS;
+      }
+   }
+   if(button[0]) {   //reset if center button pressed 
+    regA.d = 0;
+    regB.d = 0;
+    result.d = 0;
+    inputSelector.d = inputSelector.A;
+   }
+   z = zout.q;
+   v = vout.q;
+   n = nout.q;
+   out = result.q;          
+   outDisplay = display.q;     //pass the remembered display out of the module
+
+  }
+}
+
+

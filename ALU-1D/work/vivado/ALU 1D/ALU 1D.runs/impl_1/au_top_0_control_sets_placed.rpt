@@ -1,0 +1,98 @@
+Copyright 1986-2021 Xilinx, Inc. All Rights Reserved.
+-------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2021.2 (win64) Build 3367213 Tue Oct 19 02:48:09 MDT 2021
+| Date         : Wed Mar 16 01:42:08 2022
+| Host         : DESKTOP-R7M5HS2 running 64-bit major release  (build 9200)
+| Command      : report_control_sets -verbose -file au_top_0_control_sets_placed.rpt
+| Design       : au_top_0
+| Device       : xc7a35t
+-------------------------------------------------------------------------------------
+
+Control Set Information
+
+Table of Contents
+-----------------
+1. Summary
+2. Histogram
+3. Flip-Flop Distribution
+4. Detailed Control Set Information
+
+1. Summary
+----------
+
++----------------------------------------------------------+-------+
+|                          Status                          | Count |
++----------------------------------------------------------+-------+
+| Total control sets                                       |    20 |
+|    Minimum number of control sets                        |    20 |
+|    Addition due to synthesis replication                 |     0 |
+|    Addition due to physical synthesis replication        |     0 |
+| Unused register locations in slices containing registers |    62 |
++----------------------------------------------------------+-------+
+* Control sets can be merged at opt_design using control_set_merge or merge_equivalent_drivers
+** Run report_qor_suggestions for automated merging and remapping suggestions
+
+
+2. Histogram
+------------
+
++--------------------+-------+
+|       Fanout       | Count |
++--------------------+-------+
+| Total control sets |    20 |
+| >= 0 to < 4        |     1 |
+| >= 4 to < 6        |     4 |
+| >= 6 to < 8        |     5 |
+| >= 8 to < 10       |     0 |
+| >= 10 to < 12      |     0 |
+| >= 12 to < 14      |     0 |
+| >= 14 to < 16      |     0 |
+| >= 16              |    10 |
++--------------------+-------+
+* Control sets can be remapped at either synth_design or opt_design
+
+
+3. Flip-Flop Distribution
+-------------------------
+
++--------------+-----------------------+------------------------+-----------------+--------------+
+| Clock Enable | Synchronous Set/Reset | Asynchronous Set/Reset | Total Registers | Total Slices |
++--------------+-----------------------+------------------------+-----------------+--------------+
+| No           | No                    | No                     |              19 |           10 |
+| No           | No                    | Yes                    |               0 |            0 |
+| No           | Yes                   | No                     |             220 |           65 |
+| Yes          | No                    | No                     |               0 |            0 |
+| Yes          | No                    | Yes                    |               0 |            0 |
+| Yes          | Yes                   | No                     |             163 |           69 |
++--------------+-----------------------+------------------------+-----------------+--------------+
+
+
+4. Detailed Control Set Information
+-----------------------------------
+
++------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------+------------------+----------------+--------------+
+|               Clock Signal               |                       Enable Signal                       |                      Set/Reset Signal                      | Slice Load Count | Bel Load Count | Bels / Slice |
++------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------+------------------+----------------+--------------+
+|  init/autoTest/test_shift/slowclock/CLK  |                                                           |                                                            |                1 |              2 |         2.00 |
+|  clk_IBUF_BUFG                           |                                                           | reset_cond/M_reset_cond_in                                 |                3 |              4 |         1.33 |
+|  clk_IBUF_BUFG                           | init/aluunitM/M_inputSelector_d                           | reset_cond/Q[0]                                            |                2 |              4 |         2.00 |
+|  init/autoTest/test_shift/slowclock/CLK  | init/autoTest/FSM_onehot_M_testState_q_reg[4]_0[0]        | reset_cond/Q[0]                                            |                4 |              4 |         1.00 |
+|  init/autoTest/test_mod/slowclock/out[0] |                                                           | reset_cond/Q[0]                                            |                3 |              5 |         1.67 |
+|  init/autoTest/test_add/slowclock/CLK    |                                                           | reset_cond/Q[0]                                            |                3 |              6 |         2.00 |
+|  init/autoTest/test_bool/slowclock/CLK   |                                                           | reset_cond/Q[0]                                            |                2 |              6 |         3.00 |
+|  init/autoTest/test_m/slowclock/CLK      |                                                           | reset_cond/Q[0]                                            |                2 |              6 |         3.00 |
+|  init/autoTest/test_com/slowclock/CLK    |                                                           | reset_cond/Q[0]                                            |                3 |              7 |         2.33 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[3].buttoncond/E[0]                  | init/buttondetector_gen_0[1].buttondetector/SS[0]          |                2 |              7 |         3.50 |
+|  clk_IBUF_BUFG                           | init/aluunitM/aluunit/multipliermod/E[0]                  | init/buttondetector_gen_0[1].buttondetector/SS[0]          |                8 |             16 |         2.00 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[2].buttoncond/E[0]                  | init/buttondetector_gen_0[1].buttondetector/SS[0]          |               16 |             16 |         1.00 |
+|  clk_IBUF_BUFG                           | init/aluunitM/M_result_q[15]_i_1_n_0                      | init/buttondetector_gen_0[1].buttondetector/SS[0]          |               12 |             16 |         1.33 |
+|  clk_IBUF_BUFG                           |                                                           |                                                            |                9 |             17 |         1.89 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[1].buttoncond/M_ctr_q[0]_i_2__6_n_0 | init/buttoncond_gen_0[1].buttoncond/sync/M_pipe_q_reg[1]_0 |                5 |             20 |         4.00 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[2].buttoncond/M_ctr_q[0]_i_2__7_n_0 | init/buttoncond_gen_0[2].buttoncond/sync/M_pipe_q_reg[1]_0 |                5 |             20 |         4.00 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[3].buttoncond/M_ctr_q[0]_i_2__8_n_0 | init/buttoncond_gen_0[3].buttoncond/sync/M_pipe_q_reg[1]_0 |                5 |             20 |         4.00 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[4].buttoncond/sel                   | init/buttoncond_gen_0[4].buttoncond/sync/clear             |                5 |             20 |         4.00 |
+|  clk_IBUF_BUFG                           | init/buttoncond_gen_0[0].buttoncond/M_ctr_q[0]_i_2__5_n_0 | init/buttoncond_gen_0[0].buttoncond/sync/M_pipe_q_reg[1]_0 |                5 |             20 |         4.00 |
+|  clk_IBUF_BUFG                           |                                                           | reset_cond/Q[0]                                            |               49 |            186 |         3.80 |
++------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------+------------------+----------------+--------------+
+
+

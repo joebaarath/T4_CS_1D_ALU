@@ -1,0 +1,105 @@
+module initialise (
+    input clk,              // 100MHz clock
+    input rst,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led[3][8], // LEDs on IO Shield
+    output io_seg [8],      // 7-segment LEDs on IO Shield (Active low)
+    output io_sel [4],      // Digit select on IO Shield (Active low)
+    input io_button [5],    // 5 buttons on IO Shield
+    input io_dip [3][8]   // DIP switches on IO Shield
+){                
+  .clk(clk) {
+    button_conditioner buttoncond[5];                    // ensure input from button is stable 
+    edge_detector buttondetector[5](#RISE(1), #FALL(0)); // 
+    
+    .rst(rst) {
+      alu_manual aluunitM; //Manual alu
+      tester autoTest;     // auto tester
+      multi_seven_seg seg;  // convert decimal to display on 7seg led
+      fsm modeSelector = {MANUAL, AUTO};
+
+    }
+  }
+  always {
+
+ 
+    
+    led = 8h00;               //turning all the lights off as default
+    usb_tx = usb_rx;          // loop serial port
+    io_led = 3x{{8h00}};
+    io_seg = ~8h00;
+    io_sel = ~4h00;
+
+  
+    buttoncond.in = io_button[4:0];      // 0: up, 1: center, 2:down, 3:left, 4: right
+    buttondetector.in = buttoncond.out;
+    
+    seg.values = {4d15, 4d15, 4d15, 4d15};  // setting default display value 
+    
+    //Manual ALU
+    aluunitM.button = buttondetector.out[2:1]; // center and down button 
+
+    aluunitM.alufn = io_dip[2][5:0];           // connecting 6 io_dip as alufn
+    aluunitM.in[15:8] = io_dip[1];             // connect 8 io_dip as last 8 bits of input for alu
+    aluunitM.in[7:0] = io_dip[0];              // connect 8 io_dip as first 8 bits of input for alu
+    aluunitM.lsb = io_dip[2][6];               // receving input from io_dip for error checking
+    
+    
+    //Auto tester
+    autoTest.button[1:0] = buttondetector.out[4:3]; //left and right
+    autoTest.button[2] = buttondetector.out[1]; //center button
+    autoTest.lsb = io_dip[2][6];                // receving input from io_dip for error checking
+    
+    
+    //mode Selector
+    case (modeSelector.q){
+    
+      modeSelector.MANUAL:
+      io_led[0] = aluunitM.out[7:0];              // connect first 8 bit output to leds
+      io_led[1] = aluunitM.out[15:8];             // connect last 8 bit output to leds
+      io_led[2][0] = aluunitM.z;                  // connect z v n to led
+      io_led[2][1] = aluunitM.v;
+      io_led[2][2] = aluunitM.n;
+      io_seg = aluunitM.outDisplay;                // connect what to display to 7 seg led (8bit info)
+      io_sel = ~4h1;                             //select which 7 seg to use
+      
+      if (buttondetector.out[0]) {             // up button to change mode
+        modeSelector.d = modeSelector.AUTO;
+      }
+        
+        
+        
+        
+      modeSelector.AUTO:     
+
+        case(autoTest.test_state){
+            0: seg.values[3:1] = {4d0, 4d0, 4d0};  // IDLE
+            1: seg.values[3:1] = {4d0, 4d0, 4d1};  // Add
+            2: seg.values[3:1] = {4d0, 4d0, 4d2};  // compare
+            3: seg.values[3:1] = {4d0, 4d0, 4d3};  // boolean
+            4: seg.values[3:1] = {4d0, 4d0, 4d4};  // shifter
+            5: seg.values[3:1] = {4d0, 4d0, 4d5};  // multiply
+            6: seg.values[3:1] = {4d0, 4d0, 4d6};  // modolu
+        }
+        case (autoTest.current_state){
+          2b00 : seg.values[0] = 4d0; // display '0' to show that it is still calculating 
+          2b01 : seg.values[0] = 4d8; //8 for pass
+          2b10 : seg.values[0] = 4d7; //7 for fail
+          2b11 : seg.values[0] = 4d3; // for  troubleshooting
+            default : seg.values[0] = 4d1; // for troubleshooting 
+         }
+         
+        io_seg = ~seg.seg;    //seg.seg is a 8 bit value for io_seg to take as input 
+        io_sel = ~seg.sel;    // seg.sel is a 4 bit value for io_sel to take as input 
+             
+      if (buttondetector.out[0]) { // up button 
+        modeSelector.d = modeSelector.MANUAL;
+      }   
+         
+ 
+  }
+}
+}
+

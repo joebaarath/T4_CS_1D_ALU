@@ -1,0 +1,87 @@
+module alu (
+    input clk, //clock
+    input a[16],
+    input b[16],
+    input alufn[6], //alufn signal
+    input lsb,
+    output out[16],
+    output z,
+    output v,
+    output n
+  ) { 
+  shifter shiftmod;
+  adder addermod;
+  boolean booleanmod;
+  compare comparemod;
+  multiplier multipliermod;
+  modulo modulomod;
+  sig z1, v1, n1, k[16], r[16], l[16];
+  
+  always {
+  
+    // Adder block
+    addermod.a = a;
+    addermod.b = b;
+    addermod.alufn = alufn[0];
+    
+    z1 = addermod.z;
+    v1 = addermod.v;
+    n1 = addermod.n;
+    
+    z = z1;
+    v = v1;
+    n = n1;
+    
+    //compare block
+    comparemod.alufn = alufn;
+    comparemod.z = z1;
+    comparemod.v = v1;
+    comparemod.n = n1;
+    
+    // boolean block
+    booleanmod.alufn = alufn;
+    booleanmod.a = a;
+    booleanmod.b = b;
+  
+    // shifter block
+    shiftmod.a = a;
+    shiftmod.b = b[3:0];
+    shiftmod.alufn = alufn;
+    
+    // multiplier
+    multipliermod.a = a;
+    multipliermod.b = b;
+    
+    // modulo
+    modulomod.a = a;
+    modulomod.b = b;
+    
+
+    r = 16b0;
+
+    
+    
+    // case 00 select
+    case(alufn[2:1]){
+    
+      default: k = 16b0;
+      b00: k = addermod.out;
+      b01: k = multipliermod.out;
+      b10: k = modulomod.out;  
+      b11: k = r; 
+    }
+        
+    // Selector
+    case(alufn[5:4]){
+      default: l = 16b0;
+      b00: l = k; 
+      b01: l = booleanmod.out;
+      b10: l = shiftmod.out;
+      b11: l = comparemod.out;
+  }
+    if(lsb == 1){    //if the switch io_dip[2][7] is on, then invert least significant bit, change ans for error checking
+      l[0] = ~l[0];
+      }
+      out = l;
+}
+}
