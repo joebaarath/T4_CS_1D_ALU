@@ -1,4 +1,4 @@
-# ALU-1D
+# ALU-1D (GROUP 22)
 
 ## FPGA Display
 ### Input
