@@ -1,13 +1,13 @@
 module boolTest (
     input clk,  // clock
     input rst,  // reset
-    input start, //to change from 0-1 in au_top(commencing test)
+    input start,
     input lsb,
     output status[2] 
   ) {
   // slow calculation of alu for observation
   counter slowclock(#SIZE(1), #DIV(26), .clk(clk), .rst(rst));
-  dff counter[4] (.clk(slowclock.value) , .rst(rst));
+  dff testNum[4] (.clk(slowclock.value) , .rst(rst));
   fsm state (.clk(slowclock.value), .rst(rst)) = {IDLE, TEST, PASS, FAIL};
   alu alu(.clk(slowclock.value));
 
@@ -32,66 +32,80 @@ module boolTest (
         
       state.TEST:
         case(counter.q){
-          1:alu.alufn = 6b011000; //AND
+          //AND(Get 1 if both bit in same row is 1, else 0)
+          1:alu.alufn = 6b011000;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if( alu.out != 16b101000){
               state.d = state.FAIL;
             }
-          2:alu.alufn = 6b011110; //OR
+            
+          //OR(Get 1 if either bit in same row is 1, else 0)
+          2:alu.alufn = 6b011110;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if ( alu.out != 16b111100){
               state.d = state.FAIL;
             }
             
-          3:alu.alufn = 6b010110; //XOR
+          //XOR(Get 1 if only either bit in same row is 1, else 0)
+          3:alu.alufn = 6b010110;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16b010100){
               state.d = state.FAIL;
             }
-          4:alu.alufn = 6b011010; //"A"
+          
+          //"A"(Value of "A")
+          4:alu.alufn = 6b011010;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16b111100){
               state.d = state.FAIL;
             }
-            
-          5:alu.alufn = 6b011100; // "B"
+          
+          //"B"(Value of "B")
+          5:alu.alufn = 6b011100;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16b101000){
               state.d = state.FAIL;
             }
             
-            
-          6:alu.alufn = 6b010101; // "NOT A"
+          //"NOT A"(Reverse of "A")
+          6:alu.alufn = 6b010101;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16hFFC3){
               state.d = state.FAIL;
             }
-            
-          7:alu.alufn = 6b010011; // "NOT B"
+          
+          //"NOT B"(Reverse of "B")
+          7:alu.alufn = 6b010011;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16hFFD7){
               state.d = state.FAIL;
             }
-          8:alu.alufn = 6b010001; // NOR
+            
+          //"NOR"(Reverse of "OR") 
+          8:alu.alufn = 6b010001;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16hFFC3){
               state.d = state.FAIL;
             }
-          9:alu.alufn = 6b011001; // XNOR
+            
+          //"XNOR"(Reverse of "XOR")
+          9:alu.alufn = 6b011001;
             alu.a = 16b111100; //60 
             alu.b = 16b101000; //40
             if (alu.out != 16hFFEB){
               state.d = state.FAIL;
             } 
-          10:alu.alufn = 6b010111; // NAND
+            
+          //"NAND"(Reverse of "AND")
+          10:alu.alufn = 6b010111;
              alu.a = 16b111100; //60 
              alu.b = 16b101000; //40
              if (alu.out != 16hFFD7){
